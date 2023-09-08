@@ -33,7 +33,7 @@ async def on_connect():
     db = await aiosqlite.connect("db.sqlite")
     await createTable(db)
 
-@tasks.loop(seconds=10)
+@tasks.loop(seconds=300)
 async def sendChanges():
     cursor = await db.execute("SELECT * FROM pads")
     results = await cursor.fetchall()
