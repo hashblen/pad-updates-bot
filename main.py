@@ -33,7 +33,7 @@ async def on_connect():
     db = await aiosqlite.connect("db.sqlite")
     await createTable(db)
 
-@tasks.loop(seconds=10)
+@tasks.loop(seconds=300)
 async def sendChanges():
     cursor = await db.execute("SELECT * FROM pads")
     results = await cursor.fetchall()
@@ -64,12 +64,33 @@ async def on_ready():
     sendChanges.start()
 
 
-@bot.slash_command(name="pad", description="get pad")
+@bot.slash_command(name="pad", description="get current pad")
 async def pad(ctx):
-    url = "https://etherpad.in2p3.fr/p/r.d4283487f016c1b6ce4f4fbefeeeefcd/export/txt"
-    # content = requests.get(url).content.decode('utf-8')
+    cursor = await db.execute("SELECT * FROM pads WHERE gid=?", (ctx.guild.id,))
+    result = await cursor.fetchone()
+    if result is None:
+        await ctx.respond(f"The bot is not bound!")
+    else:
+        final_res = Pad(*result)
+        file = open("message.txt", 'wb')
+        file.write(requests.get(final_res.url).content)
+        file.close()
+        await ctx.respond(file=discord.File("message.txt"))
+
+@bot.slash_command(name="getpad", description="get pad from url")
+async def getpad(ctx, url: str):
+    if not url.endswith("/export/txt") or not url.endswith("/export/txt/"):
+        if url.endswith("/"):
+            url = "export/txt"
+        else:
+            url += "/export/txt"
     file = open("message.txt", 'wb')
-    file.write(requests.get(url).content)
+    try:
+        file.write(requests.get(url).content)
+    except requests.exceptions.RequestException as e:
+        await ctx.respond("Sent bad url!")
+        file.close()
+        return
     file.close()
     await ctx.respond(file=discord.File("message.txt"))
 
