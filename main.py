@@ -26,13 +26,6 @@ async def createTable(connection : aiosqlite.Connection):
 
 db = None
 
-@bot.event
-async def on_connect():
-    print("Setting up")
-    global db
-    db = await aiosqlite.connect("db.sqlite")
-    await createTable(db)
-
 @tasks.loop(seconds=300)
 async def sendChanges():
     cursor = await db.execute("SELECT * FROM pads")
@@ -60,6 +53,10 @@ async def sendChanges():
 
 @bot.event
 async def on_ready():
+    print("Setting up")
+    global db
+    db = await aiosqlite.connect("db.sqlite")
+    await createTable(db)
     print(f"{bot.user} is ready and online!")
     sendChanges.start()
 
