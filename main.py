@@ -6,6 +6,7 @@ import requests
 import aiosqlite
 from dataclasses import dataclass
 import difflib
+from io import BytesIO
 
 load_dotenv()  # load all the variables from the env file
 bot = discord.Bot()
@@ -46,9 +47,11 @@ async def sendChanges():
             diff = [d for d in diff if d[0] in "-+?"]
             await db.execute("UPDATE pads SET content=? WHERE gid=?", (content, resPad.gid))
             await db.commit()
-            await bot.get_channel(resPad.cid).send("The pad has changed! (diff algorithm test, "
-                                                   "https://en.wikipedia.org/wiki/Diff)")
-            await bot.get_channel(resPad.cid).send('```' + ''.join(diff) + '```')
+            await bot.get_channel(resPad.cid).send("The pad has changed! url: " + resPad.url[:-11])
+            if len(''.join(diff))<1950:
+                await bot.get_channel(resPad.cid).send('```' + ''.join(diff) + '```')
+            else:
+                await bot.get_channel(resPad.cid).send(file=discord.File(BytesIO(str.encode(''.join(diff))), "message.txt"))
 
 
 @bot.event
@@ -69,10 +72,7 @@ async def pad(ctx):
         await ctx.respond(f"The bot is not bound!")
     else:
         final_res = Pad(*result)
-        file = open("message.txt", 'wb')
-        file.write(requests.get(final_res.url).content)
-        file.close()
-        await ctx.respond(file=discord.File("message.txt"))
+        await ctx.respond(file=discord.File(BytesIO(requests.get(final_res.url).content), "message.txt"))
 
 @bot.slash_command(name="getpad", description="get pad from url")
 async def getpad(ctx, url: str):
@@ -81,15 +81,13 @@ async def getpad(ctx, url: str):
             url = "export/txt"
         else:
             url += "/export/txt"
-    file = open("message.txt", 'wb')
+    content = b''
     try:
-        file.write(requests.get(url).content)
+        content = requests.get(url).content
     except requests.exceptions.RequestException as e:
         await ctx.respond("Sent bad url!")
-        file.close()
         return
-    file.close()
-    await ctx.respond(file=discord.File("message.txt"))
+    await ctx.respond(file=discord.File(BytesIO(content), "message.txt"))
 
 @bot.slash_command(name="bind", description="Bind to a channel")
 async def bind(ctx, url: str):
@@ -122,7 +120,7 @@ async def isbound(ctx):
     else:
         final_res = Pad(*result)
         await ctx.respond(f"The bot is bound to <#{final_res.cid}> on guild **{str(ctx.guild.name)}** "
-                          f"with url {final_res.url[:-10]}")
+                          f"with url {final_res.url[:-11]}")
 
 @bot.slash_command(name="unbind", description="Unbinds the bot.")
 async def unbind(ctx):
