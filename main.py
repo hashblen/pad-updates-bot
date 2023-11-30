@@ -41,6 +41,7 @@ async def sendChanges():
             content = requests.get(resPad.url).content.decode('utf-8')
         except requests.exceptions.RequestException as e:
             await bot.get_channel(resPad.cid).send("The url given is bad, try to redo /bind")
+            await bot.get_channel(resPad.cid).send(str(e))
             continue
         if content != resPad.content:
             diff = difflib.ndiff(resPad.content.splitlines(keepends=True), content.splitlines(keepends=True))
@@ -85,7 +86,7 @@ async def getpad(ctx, url: str):
     try:
         content = requests.get(url).content
     except requests.exceptions.RequestException as e:
-        await ctx.respond("Sent bad url!")
+        await ctx.respond("Sent bad url!\n```" + str(e) + "```")
         return
     await ctx.respond(file=discord.File(BytesIO(content), "message.txt"))
 
@@ -103,7 +104,7 @@ async def bind(ctx, url: str):
     try:
         content = requests.get(newUrl).content.decode('utf-8')
     except requests.exceptions.RequestException as e:
-        await ctx.respond("Sent bad url!")
+        await ctx.respond("Sent bad url!\n```" + str(e) + "```")
         return
     await db.execute('''INSERT INTO pads (gid, cid, url, content) VALUES (?, ?, ?, ?) 
                         ON CONFLICT(gid) DO UPDATE SET cid=?, url=?, content=?''',
