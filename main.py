@@ -38,8 +38,9 @@ async def sendChanges():
             await db.commit()
             continue
         try:
-            content = requests.get(resPad.url).content.decode('utf-8')
-            content.raise_for_status()
+            r = requests.get(resPad.url)
+            content = r.content.decode('utf-8')
+            r.raise_for_status()
         except requests.exceptions.RequestException as e:
             await bot.get_channel(resPad.cid).send("The url given is bad, try to redo /bind")
             await bot.get_channel(resPad.cid).send(str(e))
@@ -87,8 +88,9 @@ async def getpad(ctx, url: str):
             url += "/export/txt"
     content = b''
     try:
-        content = requests.get(url).content
-        content.raise_for_status()
+        r = requests.get(url)
+        content = r.content.decode('utf-8')
+        r.raise_for_status()
     except requests.exceptions.RequestException as e:
         await ctx.respond("Sent bad url!\n```" + str(e) + "```")
         return
@@ -106,8 +108,9 @@ async def bind(ctx, url: str):
             newUrl += "/export/txt"
     content = None
     try:
-        content = requests.get(newUrl).content.decode('utf-8')
-        content.raise_for_status()
+        r = requests.get(newUrl)
+        content = r.content.decode('utf-8')
+        r.raise_for_status()
     except requests.exceptions.RequestException as e:
         await ctx.respond("Sent bad url!\n```" + str(e) + "```")
         return
