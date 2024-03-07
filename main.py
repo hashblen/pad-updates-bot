@@ -39,9 +39,12 @@ async def sendChanges():
             continue
         try:
             content = requests.get(resPad.url).content.decode('utf-8')
+            content.raise_for_status()
         except requests.exceptions.RequestException as e:
             await bot.get_channel(resPad.cid).send("The url given is bad, try to redo /bind")
             await bot.get_channel(resPad.cid).send(str(e))
+            continue
+        if content.startswith("<html>"):
             continue
         if content != resPad.content:
             diff = difflib.ndiff(resPad.content.splitlines(keepends=True), content.splitlines(keepends=True))
@@ -85,6 +88,7 @@ async def getpad(ctx, url: str):
     content = b''
     try:
         content = requests.get(url).content
+        content.raise_for_status()
     except requests.exceptions.RequestException as e:
         await ctx.respond("Sent bad url!\n```" + str(e) + "```")
         return
@@ -103,6 +107,7 @@ async def bind(ctx, url: str):
     content = None
     try:
         content = requests.get(newUrl).content.decode('utf-8')
+        content.raise_for_status()
     except requests.exceptions.RequestException as e:
         await ctx.respond("Sent bad url!\n```" + str(e) + "```")
         return
